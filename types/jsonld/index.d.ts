@@ -15,6 +15,11 @@ type RdfDataSet = object; // Placeholder
 type RdfOrString = RdfDataSet | string;
 type Callback<T> = (err: Error, res: T) => void;
 
+export namespace documentLoaders {
+    function node(): (url: Url) => Promise<RemoteDocument>;
+    function xhr(): (url: Url) => Promise<RemoteDocument>;
+}
+
 /*
  * Declares interfaces used to type the methods options object.
  * The interfaces are usefull to avoid code replication.
@@ -22,12 +27,14 @@ type Callback<T> = (err: Error, res: T) => void;
 
 export namespace Options {
     interface DocLoader {
-        documentLoader?:
-            | ((url: Url, callback: (err: Error, remoteDoc: RemoteDocument) => void) => Promise<RemoteDocument>)
-            | undefined;
+        documentLoader?: (url: Url) => Promise<RemoteDocument>;
     }
 
-    interface Common extends DocLoader {
+    interface Safe {
+        safe?: boolean | undefined;
+    }
+
+    interface Common extends DocLoader, Safe {
         base?: string | undefined;
         expandContext?: ContextDefinition | undefined;
     }
@@ -55,7 +62,7 @@ export namespace Options {
 
     type Flatten = Common;
 
-    interface Frame {
+    interface Frame extends Common {
         embed?: "@last" | "@always" | "@never" | "@link" | undefined;
         explicit?: boolean | undefined;
         requireAll?: boolean | undefined;
@@ -64,7 +71,7 @@ export namespace Options {
     }
 
     interface Normalize extends Common {
-        algorithm?: "URDNA2015" | `URGNA2012` | undefined;
+        algorithm?: "URDNA2015" | "URGNA2012" | undefined;
         skipExpansion?: boolean | undefined;
         expansion?: boolean | undefined;
         inputFormat?: MimeNQuad | undefined;
@@ -72,7 +79,7 @@ export namespace Options {
         useNative?: boolean | undefined;
     }
 
-    interface FromRdf {
+    interface FromRdf extends Safe {
         format?: MimeNQuad | undefined;
         rdfParser?: any;
         useRdfType?: boolean | undefined;
